@@ -27,5 +27,21 @@ namespace CafePOS
             }
             return total;
         }
+
+        public void total()
+        {
+            Console.WriteLine("Total the orders");
+
+            foreach (var orderItem in items)
+                {
+                    Console.WriteLine(orderItem);
+                }
+            Console.WriteLine($"Total: {getTotal()}");
+        }
+
+        public List<OrderItem> getItems()
+        {
+            return items;
+        }
     }
 }

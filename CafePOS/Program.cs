@@ -8,10 +8,14 @@ namespace CafePOS
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+            MenuItem coffee = new MenuItem("Coffee", 3.5, "Drinks");
+            MenuItem cake = new MenuItem("Cake", 5.0, "Dessert");
+
+            Order order = new Order();
+            order.addItem(coffee, 2);
+            order.addItem(cake, 1);
+
+            order.total();
         }
     }
 }
