@@ -1,21 +1,19 @@
+using System;
+using System.Windows.Forms;
+
 namespace CafePOS
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
-            MenuItem coffee = new MenuItem("Coffee", 3.5, "Drinks");
-            MenuItem cake = new MenuItem("Cake", 5.0, "Dessert");
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
 
-            Order order = new Order();
-            order.addItem(coffee, 2);
-            order.addItem(cake, 1);
-
-            order.total();
+            // Start the main form
+            Application.Run(new Form1());
         }
     }
 }

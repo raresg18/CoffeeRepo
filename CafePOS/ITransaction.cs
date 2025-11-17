@@ -6,7 +6,7 @@ namespace CafePOS
 {
     internal interface ITransaction
     {
-        void FinalizeSale();
-        double GetTotal();
+        Task FinalizeSale();
+        double getTotal();
     }
 }

@@ -4,9 +4,10 @@ using System.Text;
 
 namespace CafePOS
 {
-    internal class Order
+    internal class Order:ITransaction
     {
-        public List<OrderItem> items {  get; set; }
+        private List<OrderItem> items {  get; set; }
+        private double discountPercentage = 0;
 
         public Order() {
             items = new List<OrderItem>();
@@ -14,7 +15,15 @@ namespace CafePOS
 
         public void addItem(MenuItem item, int quantity)
         {
-            items.Add(new OrderItem(item, quantity));
+            var existingOrderItem = items.Find(oi => oi.item.name == item.name);
+            if (existingOrderItem != null)
+            {
+                existingOrderItem.quantity += quantity;
+            }
+            else
+            {
+                items.Add(new OrderItem(item, quantity));
+            }
         }
 
         public double getTotal()
@@ -25,23 +34,54 @@ namespace CafePOS
             {
                 total += item.getTotal();
             }
+
+            if (discountPercentage > 0)
+            {
+                total = total * (1 - discountPercentage / 100.0);
+            }
+
             return total;
-        }
-
-        public void total()
-        {
-            Console.WriteLine("Total the orders");
-
-            foreach (var orderItem in items)
-                {
-                    Console.WriteLine(orderItem);
-                }
-            Console.WriteLine($"Total: {getTotal()}");
         }
 
         public List<OrderItem> getItems()
         {
             return items;
+        }
+
+        public async Task FinalizeSale()
+        {
+            Console.WriteLine("Finalizing Sale...");
+            Console.WriteLine($"Total Amount Due: {getTotal()}");
+
+            string folderPath = @"D:\VisualStudioProjects\CafePOS";
+            Directory.CreateDirectory(folderPath); // Make sure folder exists
+            string fileName = $"Sales_{DateTime.Now:yyyyMMdd}.csv";
+            string fullPath = Path.Combine(folderPath, fileName);
+
+            List<string> lines = new List<string>();
+            foreach (var orderItem in items)
+            {
+                string line = $"{DateTime.Now},{orderItem.item.name},{orderItem.quantity},{orderItem.getTotal():F2}";
+                lines.Add(line);
+            }
+
+            // Asynchronously write to file
+            await File.AppendAllLinesAsync(fullPath, lines);
+
+            Console.WriteLine("Sale saved to file!");
+            items.Clear();
+        }
+        public void SetDiscount(double percentage)
+        {
+            if (percentage < 0 || percentage > 100)
+                throw new ArgumentException("Discount must be between 0 and 100");
+
+            discountPercentage = percentage;
+        }
+
+        public double GetDiscountPercentage()
+        {
+            return discountPercentage;
         }
     }
 }
