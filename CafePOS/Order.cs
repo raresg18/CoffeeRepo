@@ -25,7 +25,24 @@ namespace CafePOS
                 items.Add(new OrderItem(item, quantity));
             }
         }
+        public void RemoveItem(string itemName, int quantity = -1)
+        {
+            // Find the order item
+            var orderItem = items.Find(oi => oi.item.name == itemName);
+            if (orderItem == null)
+                return; // Item not found, nothing to remove
 
+            if (quantity <= 0 || quantity >= orderItem.quantity)
+            {
+                // Remove the whole item if quantity <= 0 or more than current quantity
+                items.Remove(orderItem);
+            }
+            else
+            {
+                // Remove only the specified quantity
+                orderItem.quantity -= quantity;
+            }
+        }
         public double getTotal()
         {
             double total = 0;

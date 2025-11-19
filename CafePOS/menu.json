@@ -1,0 +1,37 @@
+﻿[
+  {
+    "name": "Espresso",
+    "price": 3.5,
+    "category": "Drink"
+  },
+  {
+    "name": "Cappuccino",
+    "price": 5.0,
+    "category": "Drink"
+  },
+  {
+    "name": "Latte",
+    "price": 4.5,
+    "category": "Drink"
+  },
+  {
+    "name": "Tea",
+    "price": 2.0,
+    "category": "Drink"
+  },
+  {
+    "name": "Muffin",
+    "price": 2.5,
+    "category": "Food"
+  },
+  {
+    "name": "Sandwich",
+    "price": 6.0,
+    "category": "Food"
+  },
+  {
+    "name": "Pie",
+    "price": 4.5,
+    "category": "Food"
+  }
+]

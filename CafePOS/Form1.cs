@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Windows.Forms;
 
 namespace CafePOS
@@ -15,13 +16,7 @@ namespace CafePOS
             InitializeComponent();
 
             // Initialize menu
-            menuItems = new List<MenuItem>
-            {
-                new MenuItem("Espresso", 3.5, "Drink"),
-                new MenuItem("Capuccino", 5.0, "Drink"),
-                new MenuItem("Tea", 2.0, "Drink"),
-                new MenuItem("Sandwich", 6.0, "Food")
-            };
+            LoadMenuAsync();
 
             // Initialize current order
             currentOrder = new Order();
@@ -33,11 +28,7 @@ namespace CafePOS
             listView1.Columns.Add("Price", 70);
             listView1.Columns.Add("Total", 70);
 
-            // Populate menu list
-            foreach (var item in menuItems)
-            {
-                listBox1.Items.Add(item.name);
-            }
+
 
             button2.Enabled = false;
 
@@ -50,6 +41,30 @@ namespace CafePOS
 
             // Link ComboBox change to discount handler
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
+        }
+        private async Task<List<MenuItem>> LoadMenuFromJsonAsync()
+        {
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "menu.json");
+
+            if (!File.Exists(path))
+            {
+                MessageBox.Show("Menu file not found!");
+                return new List<MenuItem>();
+            }
+
+            string json = await File.ReadAllTextAsync(path);
+
+            return JsonSerializer.Deserialize<List<MenuItem>>(json);
+        }
+        private async void LoadMenuAsync()
+        {
+            menuItems = await LoadMenuFromJsonAsync();
+
+            listBox1.Items.Clear();
+            foreach (var item in menuItems)
+            {
+                listBox1.Items.Add(item.name);
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -149,11 +164,141 @@ namespace CafePOS
             currentOrder.SetDiscount(discount);
         }
 
-        // Event handler for ComboBox
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             ApplyDiscount();
             UpdateOrderListView();
+        }
+
+        private void ShowDailySalesSummary()
+        {
+            string folderPath = @"D:\VisualStudioProjects\CafePOS";
+            string fileName = $"Sales_{DateTime.Now:yyyyMMdd}.csv";
+            string fullPath = Path.Combine(folderPath, fileName);
+
+            if (!File.Exists(fullPath))
+            {
+                MessageBox.Show("No sales recorded today.");
+                return;
+            }
+
+            var salesLines = File.ReadAllLines(fullPath);
+            var sales = salesLines.Select(line =>
+            {
+                var parts = line.Split(',');
+                return new
+                {
+                    Date = DateTime.Parse(parts[0]),
+                    ItemName = parts[1],
+                    Quantity = int.Parse(parts[2]),
+                    Total = double.Parse(parts[3])
+                };
+            }).ToList();
+
+            var totalRevenue = sales.Sum(s => s.Total);
+            var mostPopularItem = sales
+                .GroupBy(s => s.ItemName)
+                .Select(g => new { Item = g.Key, Quantity = g.Sum(x => x.Quantity) })
+                .OrderByDescending(x => x.Quantity)
+                .FirstOrDefault();
+
+            label2.Text = $"Total Revenue: {totalRevenue:C}";
+            if (mostPopularItem != null)
+                label3.Text = $"Most Popular: {mostPopularItem.Item} ({mostPopularItem.Quantity} sold)";
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            ShowDailySalesSummary();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            if (listView1.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("Please select an item from the order to remove.");
+                return;
+            }
+
+            string selectedItemName = listView1.SelectedItems[0].SubItems[1].Text;
+
+            // Ask the user how many to remove
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+                $"Enter quantity to remove (leave blank or 0 to remove all):",
+                "Remove Item",
+                "0");
+
+            if (!int.TryParse(input, out int quantity))
+            {
+                MessageBox.Show("Invalid number entered.");
+                return;
+            }
+
+            currentOrder.RemoveItem(selectedItemName, quantity);
+            UpdateOrderListView();
+
+            if (currentOrder.getItems().Count == 0)
+                button2.Enabled = false;
+        }
+
+        private void ShowDailySalesReport(DateTime date)
+        {
+            string folderPath = @"D:\VisualStudioProjects\CafePOS";
+            string fileName = $"Sales_{date:yyyyMMdd}.csv";
+            string fullPath = Path.Combine(folderPath, fileName);
+
+            if (!File.Exists(fullPath))
+            {
+                MessageBox.Show("No sales recorded for this date.");
+                return;
+            }
+
+            var salesLines = File.ReadAllLines(fullPath);
+            var sales = salesLines.Select(line =>
+            {
+                var parts = line.Split(',');
+                return new
+                {
+                    ItemName = parts[1],
+                    Quantity = int.Parse(parts[2]),
+                    Total = double.Parse(parts[3])
+                };
+            }).ToList();
+
+            var totalRevenue = sales.Sum(s => s.Total);
+            var mostPopularItem = sales
+                .GroupBy(s => s.ItemName)
+                .Select(g => new { Item = g.Key, Quantity = g.Sum(x => x.Quantity) })
+                .OrderByDescending(x => x.Quantity)
+                .FirstOrDefault();
+
+            MessageBox.Show($"Date: {date:d}\nTotal Revenue: {totalRevenue:C}\nMost Popular: {mostPopularItem?.Item} ({mostPopularItem?.Quantity} sold)");
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            using (Form dateForm = new Form())
+            {
+                dateForm.Text = "Select Date";
+                DateTimePicker picker = new DateTimePicker();
+                picker.Format = DateTimePickerFormat.Short;
+                picker.Dock = DockStyle.Top;
+
+                Button btnOK = new Button();
+                btnOK.Text = "Show Report";
+                btnOK.Dock = DockStyle.Bottom;
+
+                btnOK.Click += (s, ev) => dateForm.DialogResult = DialogResult.OK;
+
+                dateForm.Controls.Add(picker);
+                dateForm.Controls.Add(btnOK);
+
+                if (dateForm.ShowDialog() == DialogResult.OK)
+                {
+                    DateTime selectedDate = picker.Value;
+                    ShowDailySalesReport(selectedDate);
+                }
+            }
         }
     }
 }
